@@ -1,7 +1,3 @@
-
-
-
-
 import threading
 # shared flag between threads
 click_flag = threading.Event()  
@@ -13,6 +9,7 @@ keyboard_flag = threading.Event()
 #frame == image
 #double-click == right click
 #click = left click
+#any click is done if the cursor stays at single place fore 1-2 seconds
 
 #buttons functionality, runs as separate thread
 def run_overlay():
@@ -44,8 +41,7 @@ def run_overlay():
         canvas.coords(circle, x - RADIUS, y - RADIUS, x + RADIUS, y + RADIUS)
         root.after(UPDATE_INTERVAL, update_circle)
 
-
-    # ==== Four Clickable Circles on Screen Edges ====
+    # ==== Clickable Circles on Screen Edges ====
     edge_radius = 60
     edge_color = "#78bafc"   # border color
     edge_fill = "#7cb7f3"    # light blue fill
@@ -143,10 +139,9 @@ def run_overlay():
                 # os.system("osk")#open virtual keypad
                 thread = threading.Thread(target=open_virtual_keyboard,daemon=True)
                 thread.start()
-                
                 canvas.itemconfig(edge_circles["keyboard"], fill=edge_colors["active"])
 
-    # Create 4 circles with clickable bindings
+    # Create circles with clickable bindings
     edge_labels = {}
 
     for name, (cx, cy) in edge_positions.items():
@@ -165,7 +160,6 @@ def run_overlay():
             "right": "Left-Click",
             "keyboard":"KeyBoard"
         }[name]
-
         text_item = canvas.create_text(
             cx, cy, text=label_text,
             fill="white", font=("Arial", 11, "bold")
@@ -175,25 +169,20 @@ def run_overlay():
         canvas.tag_bind(name, "<Button-1>", lambda e, n=name: on_circle_click(e, n))
         canvas.tag_bind(text_item, "<Button-1>", lambda e, n=name: on_circle_click(e, n))
 
-
     update_circle()
     root.mainloop()
-
-
-
 
 def run_camera():
 
     #captures images at approx 30 fps
     #convert raw images to gray color (for used by dlib)
     #detect faces in images
-    #detects 68 landmarks in images
+    #detects 68 landmarks in faces
     #detects eyes only landmarks
     #detects centers and stores prev_landarks of eye
-    #Cursor movement is capable 
-    #Clicks on-off is possible
+    #Cursor movement is relative to change of position of eye centers from one image to it's previous image
+    #Clickabe buttons are prvoided for general functionlaties like scroll down, scroll up , keyboard , left-click, and right-click
     #all 5 clicks possible
-
 
     # import os
     # BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -233,7 +222,6 @@ def run_camera():
     bottom_center =  [screen_width / 2, screen_height - edge_radius - 10]
     top_center = [screen_width / 2, edge_radius + 10]
     keyboard_center =   [0.1*screen_width, screen_height - edge_radius - 10]
-
 
     def center_avg_of_eye_landmarks(lst):
         x_lst = [ele[0] for ele in lst]
@@ -399,7 +387,6 @@ def run_camera():
                         elif(scroll_and_go_up_flag.is_set()):
                             pyautogui.scroll(100)
                             prev_mouse_position=[]
-                        #does not click anywhere
                 #remove last most and add newest position
                 prev_mouse_position=prev_mouse_pos_update(prev_mouse_position,position)
 
@@ -421,16 +408,13 @@ def run_camera():
 
             cv2.imshow("Camera:'30' Pictures per second in BGR color",frame)# shows frames images again and agian which looks like live video but it is image
             cv2.imshow("Gray:'30' Pictures per second in Gray color",gray_frame)
-
             if cv2.waitKey(1) & 0xFF == 27:#Press escape to exit
                 break
     finally:
         cap.release()#delete that cv2 object
         cv2.destroyAllWindows()#destroy cv2 window
-
 # ==== MULTI-THREADING ====
 # Run overlay and camera in parallel threads
 overlay_thread = threading.Thread(target=run_overlay, daemon=True)
 overlay_thread.start()
-
 run_camera()
